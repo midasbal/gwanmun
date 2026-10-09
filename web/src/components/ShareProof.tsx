@@ -60,7 +60,10 @@ export function ShareProof({ proxy }: { proxy: `0x${string}` }) {
           <div className="proof-card">
             <div className="proof-head">
               <svg width="18" height="18" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-                <path d="M5 8h22M9 8v17M23 8v17" stroke="currentColor" strokeWidth="3.2" strokeLinecap="square" />
+                <path d="M8 25 V17 a8 8 0 0 1 16 0 V25" stroke="var(--primary)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="16" cy="20.5" r="2.3" fill="var(--deny)" />
+                <circle cx="9.6" cy="20.5" r="1.1" fill="var(--primary)" opacity="0.5" />
+                <circle cx="22.4" cy="20.5" r="1.1" fill="var(--primary)" opacity="0.5" />
               </svg>
               <span className="proof-brand">Gwanmun</span>
               <span className="proof-net">Enforced on Maroo Testnet</span>
