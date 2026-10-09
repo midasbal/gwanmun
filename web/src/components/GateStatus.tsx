@@ -2,15 +2,18 @@ import { useReadContract } from "wagmi";
 import { MAROO_CHAIN_ID, PCL_ADDRESS, PROXY_KIND_NAMES, explorerAddress } from "../chain";
 import { iPclAbi } from "../abi/iPcl";
 import { CopyButton } from "./CopyButton";
+import { Denylist } from "./Denylist";
 
 export function GateStatus({
   proxy,
   account,
-  onForget,
+  onBack,
+  onRemove,
 }: {
   proxy: `0x${string}`;
   account: `0x${string}`;
-  onForget: () => void;
+  onBack: () => void;
+  onRemove: () => void;
 }) {
   const { data, isLoading, isError, refetch } = useReadContract({
     address: PCL_ADDRESS,
@@ -72,10 +75,19 @@ export function GateStatus({
         <p className="note note-blocked">Only the admin can manage this gate. Connect the admin account to change its policies.</p>
       ) : null}
 
+      {data && registered ? <Denylist proxy={proxy} account={account} isAdmin={isAdmin} /> : null}
+
       <div className="row">
-        <button type="button" className="btn btn-quiet btn-sm" onClick={onForget}>
+        <button type="button" className="btn btn-quiet btn-sm" onClick={onBack}>
           Use a different gate
         </button>
+      </div>
+
+      <div className="remove-block">
+        <button type="button" className="link" onClick={onRemove}>
+          Remove from my list
+        </button>
+        <p className="note">This only clears the entry saved in this browser. The gate still exists on-chain and can be found again.</p>
       </div>
     </section>
   );

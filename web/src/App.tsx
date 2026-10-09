@@ -1,12 +1,15 @@
-import { useCallback, useState } from "react";
-import { useAccount, useBalance, useConnect, useDisconnect } from "wagmi";
+import { useCallback, useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAccount, useBalance, useConnect, useDisconnect, usePublicClient } from "wagmi";
 import { MAROO_CHAIN_ID, MIN_FUNDED_BALANCE, marooTestnet } from "./chain";
 import { switchToMaroo, type Eip1193 } from "./switchNetwork";
-import { clearGate, loadGate, saveGate } from "./lib/gateStorage";
+import { addGates, loadGates, removeGate } from "./lib/gateStorage";
+import { recoverGates, type RecoverResult } from "./lib/recoverGates";
 import { AccountStrip } from "./components/AccountStrip";
 import { FundingGate } from "./components/FundingGate";
 import { DeployGate } from "./components/DeployGate";
 import { GateStatus } from "./components/GateStatus";
+import { GatesList } from "./components/GatesList";
 
 function Mark() {
   return (
@@ -97,43 +100,76 @@ function WrongNetwork({ chainId }: { chainId: number | undefined }) {
 }
 
 function Connected({ address }: { address: `0x${string}` }) {
-  const { data: balance, isLoading } = useBalance({
+  const client = usePublicClient({ chainId: MAROO_CHAIN_ID });
+  const queryClient = useQueryClient();
+  const { data: balance } = useBalance({
     address,
     chainId: MAROO_CHAIN_ID,
     query: { refetchInterval: 4000 },
   });
-  const [gate, setGate] = useState<`0x${string}` | null>(() => loadGate(address));
+  const [cached, setCached] = useState<`0x${string}`[]>(() => loadGates(address));
+  const [selected, setSelected] = useState<`0x${string}` | null>(null);
+
+  // Best-effort on-chain recovery. Additive: never blocks deploy, paste, or cached gates.
+  const recovery = useQuery({
+    queryKey: ["recoverGates", address],
+    queryFn: ({ signal }) => recoverGates(client!, address, signal),
+    enabled: !!client,
+    staleTime: 60_000,
+    retry: false,
+  });
+  const recovered = recovery.data?.gates;
+
+  // Persist anything recovered so it survives if the explorer is unreachable next time.
+  useEffect(() => {
+    if (recovered?.length) addGates(address, recovered);
+  }, [address, recovered]);
+
+  const gates = [...cached];
+  for (const g of recovered ?? []) {
+    if (!gates.some((x) => x.toLowerCase() === g.toLowerCase())) gates.push(g);
+  }
 
   const onGate = useCallback(
     (proxy: `0x${string}`) => {
-      saveGate(address, proxy);
-      setGate(proxy);
+      setCached(addGates(address, [proxy]));
+      setSelected(proxy);
     },
     [address],
   );
-  const onForget = useCallback(() => {
-    clearGate(address);
-    setGate(null);
-  }, [address]);
+  const onRemove = useCallback(() => {
+    if (!selected) return;
+    setCached(removeGate(address, selected));
+    // A recovered gate would reappear on the next search; hide it for this session too.
+    queryClient.setQueryData(["recoverGates", address], (old: RecoverResult | undefined) =>
+      old ? { ...old, gates: old.gates.filter((g) => g.toLowerCase() !== selected.toLowerCase()) } : old,
+    );
+    setSelected(null);
+  }, [address, selected, queryClient]);
+
+  const searching = recovery.isFetching;
+  const searchFailed = !!recovery.data && recovery.data.errors.length > 0 && recovery.data.gates.length === 0;
+  const funded = balance ? balance.value >= MIN_FUNDED_BALANCE : null;
 
   let body;
-  if (gate) {
-    body = <GateStatus proxy={gate} account={address} onForget={onForget} />;
-  } else if (isLoading || !balance) {
-    body = (
-      <section className="panel">
-        <p className="lede">Reading balance</p>
-      </section>
-    );
-  } else if (balance.value < MIN_FUNDED_BALANCE) {
+  if (selected) {
+    body = <GateStatus proxy={selected} account={address} onBack={() => setSelected(null)} onRemove={onRemove} />;
+  } else {
     body = (
       <>
-        <FundingGate balance={balance} />
-        <DeployGate account={address} onGate={onGate} existingOnly />
+        {gates.length > 0 || searching ? (
+          <GatesList gates={gates} searching={searching} searchFailed={searchFailed} onOpen={setSelected} />
+        ) : null}
+        {funded === false && balance ? <FundingGate balance={balance} /> : null}
+        {funded === null ? (
+          <section className="panel">
+            <p className="note">Reading balance</p>
+          </section>
+        ) : (
+          <DeployGate account={address} onGate={onGate} existingOnly={!funded} hasGates={gates.length > 0} />
+        )}
       </>
     );
-  } else {
-    body = <DeployGate account={address} onGate={onGate} />;
   }
 
   return (

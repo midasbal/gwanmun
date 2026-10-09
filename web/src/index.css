@@ -418,3 +418,64 @@ a.btn {
   display: inline-block;
   text-decoration: none;
 }
+
+/* denylist */
+.denylist {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+}
+
+.list-row + .list-row {
+  border-top: 1px solid var(--border);
+}
+
+.list-row .btn-sm {
+  margin-left: 0;
+  flex-shrink: 0;
+}
+
+.add-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gate-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.list-row .btn-sm.btn-primary {
+  padding: 7px 16px;
+}
+
+.remove-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}

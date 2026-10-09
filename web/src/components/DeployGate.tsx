@@ -27,11 +27,14 @@ export function DeployGate({
   account,
   onGate,
   existingOnly = false,
+  hasGates = false,
 }: {
   account: `0x${string}`;
   onGate: (proxy: `0x${string}`) => void;
   /** When unfunded, only the paste-an-existing-gate path is offered. */
   existingOnly?: boolean;
+  /** True when the account already has gates listed, which changes the wording. */
+  hasGates?: boolean;
 }) {
   const client = usePublicClient({ chainId: MAROO_CHAIN_ID });
   const write = useWriteContract();
@@ -131,8 +134,8 @@ export function DeployGate({
     <>
       {existingOnly ? null : (
       <section className="panel">
-        <p className="eyebrow">Step 1</p>
-        <h1>Deploy your compliance gate</h1>
+        {hasGates ? null : <p className="eyebrow">Step 1</p>}
+        {hasGates ? <h2>Deploy a new gate</h2> : <h1>Deploy your compliance gate</h1>}
         <p className="lede">
           This deploys a PCL proxy that you own and will curate. Calls routed through it are checked by the chain against
           the policies you bind to it.
