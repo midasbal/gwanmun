@@ -479,3 +479,31 @@ a.btn {
   padding-top: 20px;
   border-top: 1px solid var(--border);
 }
+
+/* address checker */
+.verdict {
+  min-height: 1.65em;
+}
+
+.verdict-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.verdict-line .tag {
+  margin-left: 0;
+}
+
+.tag-blocked {
+  color: var(--blocked);
+  background: var(--blocked-bg);
+}
+
+.tag-neutral {
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}

@@ -50,3 +50,36 @@ export function removeGate(address: string, proxy: string): `0x${string}`[] {
   write(address, next);
   return next;
 }
+
+// Gates the user hid with "Remove from my list". Kept separately so on-chain recovery
+// cannot bring them back. Addresses are stored lowercased.
+const dismissedKey = (address: string) => `gwanmun.dismissed.${address.toLowerCase()}`;
+
+function writeDismissed(address: string, list: string[]) {
+  try {
+    localStorage.setItem(dismissedKey(address), JSON.stringify(list));
+  } catch {
+    /* storage unavailable; the gate is hidden for this session only */
+  }
+}
+
+export function loadDismissed(address: string): string[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(dismissedKey(address)) ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter((a): a is string => typeof a === "string" && isAddr(a)).map((a) => a.toLowerCase()) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addDismissed(address: string, proxy: string): string[] {
+  const next = Array.from(new Set([...loadDismissed(address), proxy.toLowerCase()]));
+  writeDismissed(address, next);
+  return next;
+}
+
+export function removeDismissed(address: string, proxy: string): string[] {
+  const next = loadDismissed(address).filter((a) => a !== proxy.toLowerCase());
+  writeDismissed(address, next);
+  return next;
+}

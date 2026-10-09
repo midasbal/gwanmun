@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useAccount, useBalance, useConnect, useDisconnect, usePublicClient } from "wagmi";
 import { MAROO_CHAIN_ID, MIN_FUNDED_BALANCE, marooTestnet } from "./chain";
 import { switchToMaroo, type Eip1193 } from "./switchNetwork";
-import { addGates, loadGates, removeGate } from "./lib/gateStorage";
-import { recoverGates, type RecoverResult } from "./lib/recoverGates";
+import { addDismissed, addGates, loadDismissed, loadGates, removeDismissed, removeGate } from "./lib/gateStorage";
+import { recoverGates } from "./lib/recoverGates";
 import { AccountStrip } from "./components/AccountStrip";
 import { FundingGate } from "./components/FundingGate";
 import { DeployGate } from "./components/DeployGate";
@@ -101,13 +101,13 @@ function WrongNetwork({ chainId }: { chainId: number | undefined }) {
 
 function Connected({ address }: { address: `0x${string}` }) {
   const client = usePublicClient({ chainId: MAROO_CHAIN_ID });
-  const queryClient = useQueryClient();
   const { data: balance } = useBalance({
     address,
     chainId: MAROO_CHAIN_ID,
     query: { refetchInterval: 4000 },
   });
   const [cached, setCached] = useState<`0x${string}`[]>(() => loadGates(address));
+  const [dismissed, setDismissed] = useState<string[]>(() => loadDismissed(address));
   const [selected, setSelected] = useState<`0x${string}` | null>(null);
 
   // Best-effort on-chain recovery. Additive: never blocks deploy, paste, or cached gates.
@@ -122,16 +122,21 @@ function Connected({ address }: { address: `0x${string}` }) {
 
   // Persist anything recovered so it survives if the explorer is unreachable next time.
   useEffect(() => {
-    if (recovered?.length) addGates(address, recovered);
-  }, [address, recovered]);
+    const visible = (recovered ?? []).filter((g) => !dismissed.includes(g.toLowerCase()));
+    if (visible.length) addGates(address, visible);
+  }, [address, recovered, dismissed]);
 
-  const gates = [...cached];
-  for (const g of recovered ?? []) {
-    if (!gates.some((x) => x.toLowerCase() === g.toLowerCase())) gates.push(g);
+  // Displayed gates: cached merged with recovered, minus anything the user dismissed.
+  const gates: `0x${string}`[] = [];
+  for (const g of [...cached, ...(recovered ?? [])]) {
+    const k = g.toLowerCase();
+    if (!dismissed.includes(k) && !gates.some((x) => x.toLowerCase() === k)) gates.push(g);
   }
 
   const onGate = useCallback(
     (proxy: `0x${string}`) => {
+      // Re-adding a previously removed gate un-hides it.
+      setDismissed(removeDismissed(address, proxy));
       setCached(addGates(address, [proxy]));
       setSelected(proxy);
     },
@@ -140,12 +145,9 @@ function Connected({ address }: { address: `0x${string}` }) {
   const onRemove = useCallback(() => {
     if (!selected) return;
     setCached(removeGate(address, selected));
-    // A recovered gate would reappear on the next search; hide it for this session too.
-    queryClient.setQueryData(["recoverGates", address], (old: RecoverResult | undefined) =>
-      old ? { ...old, gates: old.gates.filter((g) => g.toLowerCase() !== selected.toLowerCase()) } : old,
-    );
+    setDismissed(addDismissed(address, selected));
     setSelected(null);
-  }, [address, selected, queryClient]);
+  }, [address, selected]);
 
   const searching = recovery.isFetching;
   const searchFailed = !!recovery.data && recovery.data.errors.length > 0 && recovery.data.gates.length === 0;

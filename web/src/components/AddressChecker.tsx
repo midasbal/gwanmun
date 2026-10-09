@@ -1,0 +1,126 @@
+import { useEffect, useState } from "react";
+import { encodeFunctionData, isAddress } from "viem";
+import { useQuery } from "@tanstack/react-query";
+import { usePublicClient, useReadContract } from "wagmi";
+import { MAROO_CHAIN_ID, PCL_ADDRESS } from "../chain";
+import { iPclAbi } from "../abi/iPcl";
+import { describeError, inspectRevert } from "../lib/errors";
+
+const SAMPLE_ADDRESS = "0x000000000000000000000000000000000000dEaD";
+const RECIPIENT = "0x000000000000000000000000000000000000dEaD" as const;
+const forwardAbi = [
+  {
+    type: "function",
+    name: "forward",
+    stateMutability: "payable",
+    inputs: [{ name: "to", type: "address" }],
+    outputs: [],
+  },
+] as const;
+
+type Verdict =
+  | { kind: "allowed" }
+  | { kind: "blocked" }
+  | { kind: "indeterminate"; message: string };
+
+function useDebounced<T>(value: T, ms: number) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return v;
+}
+
+export function AddressChecker({ proxy, account }: { proxy: `0x${string}`; account: `0x${string}` }) {
+  const client = usePublicClient({ chainId: MAROO_CHAIN_ID });
+  const [input, setInput] = useState<string>(account);
+  const debounced = useDebounced(input, 400);
+  const valid = isAddress(debounced);
+
+  // Re-run the check when the gate's policies are re-read (for example after a denylist update).
+  const { dataUpdatedAt } = useReadContract({
+    address: PCL_ADDRESS,
+    abi: iPclAbi,
+    functionName: "contractPolicies",
+    args: [proxy],
+    chainId: MAROO_CHAIN_ID,
+  });
+
+  const check = useQuery<Verdict>({
+    queryKey: ["addressCheck", proxy, debounced.toLowerCase(), dataUpdatedAt],
+    enabled: valid && !!client,
+    retry: false,
+    staleTime: 0,
+    queryFn: async () => {
+      try {
+        await client!.call({
+          account: debounced as `0x${string}`,
+          to: proxy,
+          value: 0n,
+          data: encodeFunctionData({ abi: forwardAbi, functionName: "forward", args: [RECIPIENT] }),
+        });
+        return { kind: "allowed" };
+      } catch (e) {
+        const r = inspectRevert(e);
+        if (r.pcl?.name === "InDenylist") return { kind: "blocked" };
+        // A revert for any other reason is reported as such, never as allowed or blocked.
+        if (r.isRevert) return { kind: "indeterminate", message: describeError(e).message };
+        throw e; // network or RPC failure: surfaced as the error state
+      }
+    },
+  });
+
+  const typing = input !== debounced;
+  const showInvalid = !typing && debounced.length > 0 && !valid;
+  const verdict = check.data;
+  const short = valid ? `${debounced.slice(0, 6)}...${debounced.slice(-4)}` : "";
+
+  return (
+    <div className="denylist">
+      <h2>Check an address</h2>
+      <p className="note">Free on-chain simulation: no gas, no signature.</p>
+
+      <div className="row">
+        <input
+          className="input mono"
+          placeholder="0x..."
+          value={input}
+          onChange={(e) => setInput(e.target.value.trim())}
+          spellCheck={false}
+          aria-label="Address to check"
+        />
+        <button type="button" className="btn btn-quiet" onClick={() => setInput(account)}>
+          Check my address
+        </button>
+        <button type="button" className="btn btn-quiet" onClick={() => setInput(SAMPLE_ADDRESS)}>
+          Check the sample address
+        </button>
+      </div>
+
+      <div className="verdict" aria-live="polite">
+        {showInvalid ? <p className="note">Enter a full 42 character address.</p> : null}
+        {valid && !typing && check.isFetching && !verdict ? <p className="note">Checking</p> : null}
+        {valid && !typing && check.isError ? (
+          <p className="note note-blocked">Could not run the check. {describeError(check.error).message}</p>
+        ) : null}
+        {valid && !typing && verdict && !check.isError ? (
+          <p className="verdict-line">
+            {verdict.kind === "allowed" ? <span className="tag tag-allowed">Allowed</span> : null}
+            {verdict.kind === "blocked" ? <span className="tag tag-blocked">Blocked</span> : null}
+            {verdict.kind === "indeterminate" ? <span className="tag tag-neutral">Indeterminate</span> : null}
+            <span className="mono">{short}</span>
+            <span>
+              {verdict.kind === "allowed"
+                ? "can transact through this gate."
+                : verdict.kind === "blocked"
+                  ? "is blocked by the denylist."
+                  : verdict.message}
+            </span>
+            {check.isFetching ? <span className="note">Updating</span> : null}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}

@@ -3,6 +3,7 @@ import { MAROO_CHAIN_ID, PCL_ADDRESS, PROXY_KIND_NAMES, explorerAddress } from "
 import { iPclAbi } from "../abi/iPcl";
 import { CopyButton } from "./CopyButton";
 import { Denylist } from "./Denylist";
+import { AddressChecker } from "./AddressChecker";
 
 export function GateStatus({
   proxy,
@@ -76,6 +77,7 @@ export function GateStatus({
       ) : null}
 
       {data && registered ? <Denylist proxy={proxy} account={account} isAdmin={isAdmin} /> : null}
+      {data && registered ? <AddressChecker proxy={proxy} account={account} /> : null}
 
       <div className="row">
         <button type="button" className="btn btn-quiet btn-sm" onClick={onBack}>
@@ -87,7 +89,7 @@ export function GateStatus({
         <button type="button" className="link" onClick={onRemove}>
           Remove from my list
         </button>
-        <p className="note">This only clears the entry saved in this browser. The gate still exists on-chain and can be found again.</p>
+        <p className="note">This hides the gate from your list on this device. It still exists on-chain, and you can add it back by pasting its address.</p>
       </div>
     </section>
   );
