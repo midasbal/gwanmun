@@ -11,12 +11,10 @@ import { ShareProof } from "./ShareProof";
 export function GateStatus({
   proxy,
   account,
-  onHome,
   onRemove,
 }: {
   proxy: `0x${string}`;
   account: `0x${string}`;
-  onHome: () => void;
   onRemove: () => void;
 }) {
   const { data, isLoading, isError, refetch } = useReadContract({
@@ -31,7 +29,7 @@ export function GateStatus({
   const isAdmin = !!data && data.admin.toLowerCase() === account.toLowerCase();
 
   return (
-    <section className="panel">
+    <section className="panel gate-panel">
       <p className={`eyebrow ${registered ? "eyebrow-allowed" : "eyebrow-blocked"}`}>
         {isLoading ? "Reading gate" : registered ? "Gate registered" : "Gate not found"}
       </p>
@@ -79,17 +77,14 @@ export function GateStatus({
         <p className="note note-blocked">Only the admin can manage this gate. Connect the admin account to change its policies.</p>
       ) : null}
 
-      {data && registered ? <Denylist proxy={proxy} account={account} isAdmin={isAdmin} /> : null}
-      {data && registered ? <SendThroughGate proxy={proxy} account={account} /> : null}
-      {data && registered ? <AddressChecker proxy={proxy} account={account} /> : null}
-      {data && registered ? <OnChainDetails proxy={proxy} /> : null}
-      {data && registered ? <ShareProof proxy={proxy} /> : null}
-
-      <div className="row">
-        <button type="button" className="btn btn-quiet btn-sm" onClick={onHome}>
-          Back to home
-        </button>
+      <div className="gate-grid">
+        {data && registered ? <Denylist proxy={proxy} account={account} isAdmin={isAdmin} /> : null}
+        {data && registered ? <SendThroughGate proxy={proxy} account={account} /> : null}
+        {data && registered ? <AddressChecker proxy={proxy} account={account} /> : null}
+        {data && registered ? <OnChainDetails proxy={proxy} /> : null}
       </div>
+
+      {data && registered ? <ShareProof proxy={proxy} /> : null}
 
       <div className="remove-block">
         <button type="button" className="link" onClick={onRemove}>

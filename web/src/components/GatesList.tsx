@@ -3,6 +3,7 @@ import { MAROO_CHAIN_ID, PCL_ADDRESS, PROXY_KIND_NAMES, explorerAddress } from "
 import { iPclAbi } from "../abi/iPcl";
 import { CopyButton } from "./CopyButton";
 
+/** One table row. The type is the real proxy kind read from the PCL precompile, not a constant. */
 function GateRow({ proxy, onOpen }: { proxy: `0x${string}`; onOpen: () => void }) {
   const { data, isLoading, isError } = useReadContract({
     address: PCL_ADDRESS,
@@ -11,24 +12,27 @@ function GateRow({ proxy, onOpen }: { proxy: `0x${string}`; onOpen: () => void }
     args: [proxy],
     chainId: MAROO_CHAIN_ID,
   });
-  const unregistered = !!data && data.kind === 0;
+
+  let tag;
+  if (isLoading) tag = <span className="tag tag-neutral">Reading</span>;
+  else if (isError || !data) tag = <span className="tag tag-neutral">Unavailable</span>;
+  else if (data.kind === 0) tag = <span className="tag tag-blocked">Not registered</span>;
+  else tag = <span className="tag tag-neutral">{PROXY_KIND_NAMES[data.kind] ?? "Unknown"}</span>;
+
   return (
-    <li className="list-row">
-      <span className="gate-row-main">
-        <span className="mono wrap">{proxy}</span>
-        <span className="note">
-          {isLoading ? "Reading kind" : isError ? "Kind unavailable" : unregistered ? "Not a registered PCL proxy" : `${PROXY_KIND_NAMES[data!.kind] ?? "Unknown"} proxy`}
-          {" "}
-          <CopyButton text={proxy} />{" "}
-          <a className="link" href={explorerAddress(proxy)} target="_blank" rel="noopener noreferrer">
-            Explorer
-          </a>
-        </span>
-      </span>
-      <button type="button" className="btn btn-primary btn-sm" onClick={onOpen}>
-        Open
-      </button>
-    </li>
+    <tr>
+      <td className="mono gates-addr wrap">{proxy}</td>
+      <td>{tag}</td>
+      <td className="gates-actions">
+        <CopyButton text={proxy} />
+        <a className="link" href={explorerAddress(proxy)} target="_blank" rel="noopener noreferrer">
+          Explorer
+        </a>
+        <button type="button" className="btn btn-primary btn-sm" onClick={onOpen}>
+          Open
+        </button>
+      </td>
+    </tr>
   );
 }
 
@@ -38,27 +42,39 @@ export function GatesList({
   searchFailed,
   onOpen,
 }: {
-  gates: `0x${string}`[];
+  gates: readonly `0x${string}`[];
   searching: boolean;
   searchFailed: boolean;
   onOpen: (proxy: `0x${string}`) => void;
 }) {
   return (
-    <section className="panel">
-      <h1>Your gates</h1>
-      {searching ? <p className="note">Looking for your gates on-chain</p> : null}
-      {gates.length > 0 ? (
-        <ul className="list">
-          {gates.map((g) => (
-            <GateRow key={g} proxy={g} onOpen={() => onOpen(g)} />
-          ))}
-        </ul>
-      ) : searching ? null : (
-        <p className="note">No gates found for this account.</p>
+    <section className="panel gates">
+      <div className="gates-head">
+        <h1>Your gates</h1>
+        <span className="gates-count">
+          {gates.length} {gates.length === 1 ? "gate" : "gates"}
+        </span>
+      </div>
+      {gates.length === 0 ? (
+        <p className="note">{searching ? "Checking the chain for gates you deployed." : "No gates yet."}</p>
+      ) : (
+        <table className="gates-table">
+          <thead>
+            <tr>
+              <th>Gate</th>
+              <th>Type</th>
+              <th aria-label="Actions"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {gates.map((g) => (
+              <GateRow key={g} proxy={g} onOpen={() => onOpen(g)} />
+            ))}
+          </tbody>
+        </table>
       )}
-      {searchFailed && gates.length === 0 && !searching ? (
-        <p className="note">Could not search the chain for your gates. You can still deploy a new one or paste an existing address.</p>
-      ) : null}
+      {searchFailed ? <p className="note">Could not reach the chain to look for more gates.</p> : null}
+      {searching && gates.length > 0 ? <p className="note">Checking the chain for more gates.</p> : null}
     </section>
   );
 }

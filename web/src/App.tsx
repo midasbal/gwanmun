@@ -12,6 +12,7 @@ import { GateStatus } from "./components/GateStatus";
 import { GatesList } from "./components/GatesList";
 import { Docs } from "./components/Docs";
 import { Footer } from "./components/Footer";
+import { GateField } from "./components/GateField";
 
 function Mark() {
   return (
@@ -56,7 +57,7 @@ function Header({ nav }: { nav?: { onHome: () => void; onDocs: () => void } }) {
 }
 
 function Disconnected() {
-  const { connectors, connect, isPending, error } = useConnect();
+  const { connectors, connect, isPending, error, reset } = useConnect();
   const hasWallet = typeof window !== "undefined" && "ethereum" in window;
   const connector = connectors[0];
   return (
@@ -75,12 +76,19 @@ function Disconnected() {
           disabled={!connector || !hasWallet || isPending}
           onClick={() => connector && connect({ connector })}
         >
-          {isPending ? "Waiting for wallet" : "Connect wallet"}
+          {isPending ? "Connecting" : "Connect wallet"}
         </button>
-        <a className="btn btn-quiet" href={FAUCET_URL} target="_blank" rel="noopener noreferrer">
-          Get testnet tOKRW
-        </a>
+        {isPending ? (
+          <button type="button" className="btn btn-quiet" onClick={() => reset()}>
+            Cancel
+          </button>
+        ) : (
+          <a className="btn btn-quiet" href={FAUCET_URL} target="_blank" rel="noopener noreferrer">
+            Get testnet tOKRW
+          </a>
+        )}
       </div>
+      {isPending ? <p className="note">Check your wallet to approve the connection.</p> : null}
       {!hasWallet ? <p className="note">No browser wallet detected. Install MetaMask or a compatible wallet.</p> : null}
       {error ? <p className="note note-blocked">{error.message}</p> : null}
     </section>
@@ -188,23 +196,31 @@ function Connected({ address }: { address: `0x${string}` }) {
 
   let body;
   if (selected) {
-    body = <GateStatus proxy={selected} account={address} onHome={goHome} onRemove={onRemove} />;
+    body = <GateStatus proxy={selected} account={address} onRemove={onRemove} />;
   } else if (view === "docs") {
     body = <Docs onHome={goHome} />;
   } else {
     body = (
       <>
-        {gates.length > 0 || searching ? (
-          <GatesList gates={gates} searching={searching} searchFailed={searchFailed} onOpen={setSelected} />
+        {funded === false && balance ? (
+          <div className="home-fund">
+            <FundingGate balance={balance} />
+          </div>
         ) : null}
-        {funded === false && balance ? <FundingGate balance={balance} /> : null}
-        {funded === null ? (
-          <section className="panel">
-            <p className="note">Reading balance</p>
-          </section>
-        ) : (
-          <DeployGate account={address} onGate={onGate} existingOnly={!funded} hasGates={gates.length > 0} />
-        )}
+        {gates.length > 0 || searching ? (
+          <div className="home-gates">
+            <GatesList gates={gates} searching={searching} searchFailed={searchFailed} onOpen={setSelected} />
+          </div>
+        ) : null}
+        <div className="home-actions">
+          {funded === null ? (
+            <section className="panel">
+              <p className="note">Reading balance</p>
+            </section>
+          ) : (
+            <DeployGate account={address} onGate={onGate} existingOnly={!funded} hasGates={gates.length > 0} />
+          )}
+        </div>
       </>
     );
   }
@@ -221,12 +237,17 @@ function Connected({ address }: { address: `0x${string}` }) {
 export default function App() {
   const { address, isConnected, chainId, status } = useAccount();
   let content;
-  if (status === "connecting" || status === "reconnecting") {
+  if (status === "reconnecting") {
+    // Automatic session restore resolves on its own. An active connect never takes over the page.
     content = (
-      <main className="main">
-        <section className="panel">
-          <p className="lede">Connecting</p>
-        </section>
+      <main className="main main-splash">
+        <div className="splash">
+          <span className="wordmark">
+            <Mark />
+            <span>Gwanmun</span>
+          </span>
+          <p className="note">Restoring your session</p>
+        </div>
       </main>
     );
   } else if (!isConnected || !address) {
@@ -250,6 +271,7 @@ export default function App() {
   }
   return (
     <div className="shell">
+      <GateField />
       {content}
       <Footer />
     </div>
