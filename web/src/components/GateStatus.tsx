@@ -4,18 +4,19 @@ import { iPclAbi } from "../abi/iPcl";
 import { CopyButton } from "./CopyButton";
 import { Denylist } from "./Denylist";
 import { AddressChecker } from "./AddressChecker";
+import { SendThroughGate } from "./SendThroughGate";
 import { OnChainDetails } from "./OnChainDetails";
 import { ShareProof } from "./ShareProof";
 
 export function GateStatus({
   proxy,
   account,
-  onBack,
+  onHome,
   onRemove,
 }: {
   proxy: `0x${string}`;
   account: `0x${string}`;
-  onBack: () => void;
+  onHome: () => void;
   onRemove: () => void;
 }) {
   const { data, isLoading, isError, refetch } = useReadContract({
@@ -79,13 +80,14 @@ export function GateStatus({
       ) : null}
 
       {data && registered ? <Denylist proxy={proxy} account={account} isAdmin={isAdmin} /> : null}
+      {data && registered ? <SendThroughGate proxy={proxy} account={account} /> : null}
       {data && registered ? <AddressChecker proxy={proxy} account={account} /> : null}
       {data && registered ? <OnChainDetails proxy={proxy} /> : null}
       {data && registered ? <ShareProof proxy={proxy} /> : null}
 
       <div className="row">
-        <button type="button" className="btn btn-quiet btn-sm" onClick={onBack}>
-          Use a different gate
+        <button type="button" className="btn btn-quiet btn-sm" onClick={onHome}>
+          Back to home
         </button>
       </div>
 

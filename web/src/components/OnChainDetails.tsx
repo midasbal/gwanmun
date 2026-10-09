@@ -81,10 +81,12 @@ export function OnChainDetails({ proxy }: { proxy: `0x${string}` }) {
 
         <h3>How enforcement works</h3>
         <p className="note note-body">
-          Calls sent to this Transparent PCL proxy trigger the PCL preCall and postCall hooks. PCL evaluates the bound policy
-          against the sender, the principal that initiated the call. A call from a denylisted sender reverts with
-          InDenylist(address sender), error selector <span className="mono">0x0201b218</span>. An address that only appears as the
-          call target or in the call data is not checked. The address checker reproduces the revert with eth_call, at zero gas.
+          Calls to this Transparent PCL proxy trigger the PCL preCall and postCall hooks, which evaluate the bound policy before
+          the call executes. For the denylist, a transaction is rejected if the sender is on the denylist, or if it sends value to
+          a denylisted address. The revert is InDenylist(address), error selector <span className="mono">0x0201b218</span>, and
+          the address it names is the denylisted party involved, which may be the sender or the recipient. A zero-value call that
+          only names a denylisted address as its target is allowed. The address checker reproduces the sender side of this rule
+          with eth_call, at zero gas.
         </p>
 
         <h3>Addresses</h3>

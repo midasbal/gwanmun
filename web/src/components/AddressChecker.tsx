@@ -4,20 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { usePublicClient, useReadContract } from "wagmi";
 import { MAROO_CHAIN_ID, PCL_ADDRESS } from "../chain";
 import { iPclAbi } from "../abi/iPcl";
+import { forwardAbi } from "../abi/forward";
 import { describeError, inspectRevert } from "../lib/errors";
 import { CopyButton } from "./CopyButton";
 
 const SAMPLE_ADDRESS = "0x000000000000000000000000000000000000dEaD";
-const RECIPIENT = "0x000000000000000000000000000000000000dEaD" as const;
-const forwardAbi = [
-  {
-    type: "function",
-    name: "forward",
-    stateMutability: "payable",
-    inputs: [{ name: "to", type: "address" }],
-    outputs: [],
-  },
-] as const;
+const RECIPIENT = "0x00000000000000000000000000000000000000e1" as const;
 
 type Verdict =
   | { kind: "allowed" }
@@ -80,7 +72,7 @@ export function AddressChecker({ proxy, account }: { proxy: `0x${string}`; accou
   return (
     <div className="denylist">
       <h2>Check an address</h2>
-      <p className="note">Free on-chain simulation: no gas, no signature.</p>
+      <p className="note">Checks whether an address is on this gate's denylist. Free on-chain simulation: no gas, no signature.</p>
 
       <div className="row">
         <input
@@ -113,9 +105,9 @@ export function AddressChecker({ proxy, account }: { proxy: `0x${string}`; accou
             <span className="mono">{short}</span>
             <span>
               {verdict.kind === "allowed"
-                ? "can transact through this gate."
+                ? "is not on this gate's denylist."
                 : verdict.kind === "blocked"
-                  ? "is blocked by the denylist."
+                  ? "is on this gate's denylist. The gate blocks it from sending, and from receiving value."
                   : verdict.message}
             </span>
             {check.isFetching ? <span className="note">Updating</span> : null}

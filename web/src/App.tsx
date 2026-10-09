@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAccount, useBalance, useConnect, useDisconnect, usePublicClient } from "wagmi";
-import { MAROO_CHAIN_ID, MIN_FUNDED_BALANCE, marooTestnet } from "./chain";
+import { FAUCET_URL, MAROO_CHAIN_ID, MIN_FUNDED_BALANCE, marooTestnet } from "./chain";
 import { switchToMaroo, type Eip1193 } from "./switchNetwork";
 import { addDismissed, addGates, loadDismissed, loadGates, removeDismissed, removeGate } from "./lib/gateStorage";
 import { recoverGates } from "./lib/recoverGates";
@@ -10,6 +10,8 @@ import { FundingGate } from "./components/FundingGate";
 import { DeployGate } from "./components/DeployGate";
 import { GateStatus } from "./components/GateStatus";
 import { GatesList } from "./components/GatesList";
+import { Docs } from "./components/Docs";
+import { Footer } from "./components/Footer";
 
 function Mark() {
   return (
@@ -19,20 +21,36 @@ function Mark() {
   );
 }
 
-function Header() {
-  const { isConnected } = useAccount();
+function Header({ nav }: { nav?: { onHome: () => void; onDocs: () => void } }) {
   const { disconnect } = useDisconnect();
+  const { isConnected } = useAccount();
+  const brand = (
+    <>
+      <Mark />
+      <span>Gwanmun</span>
+    </>
+  );
   return (
     <header className="header">
-      <div className="wordmark">
-        <Mark />
-        <span>Gwanmun</span>
-      </div>
-      {isConnected ? (
-        <button type="button" className="btn btn-quiet btn-sm" onClick={() => disconnect()}>
-          Disconnect
+      {nav ? (
+        <button type="button" className="wordmark wordmark-button" onClick={nav.onHome} aria-label="Gwanmun home">
+          {brand}
         </button>
-      ) : null}
+      ) : (
+        <div className="wordmark">{brand}</div>
+      )}
+      <div className="header-actions">
+        {nav ? (
+          <button type="button" className="link header-link" onClick={nav.onDocs}>
+            Docs
+          </button>
+        ) : null}
+        {isConnected ? (
+          <button type="button" className="btn btn-quiet btn-sm" onClick={() => disconnect()}>
+            Disconnect
+          </button>
+        ) : null}
+      </div>
     </header>
   );
 }
@@ -43,9 +61,12 @@ function Disconnected() {
   const connector = connectors[0];
   return (
     <section className="panel">
-      <h1>Compliance gateway for Maroo</h1>
-      <p className="lede">
-        Deploy your own PCL proxy, manage its denylist, and watch the chain reject calls from denylisted senders.
+      <h1>Gwanmun</h1>
+      <p className="lede">Set a compliance rule on Maroo, and prove the chain enforces it.</p>
+      <p>
+        Deploy a gate you control on the Maroo testnet, then add an address to its denylist. From that point, Maroo itself, not
+        this app, rejects that address's transactions through your gate. Connect a wallet to deploy your gate. You will need a
+        small amount of testnet tOKRW for gas, which the faucet gives out for free.
       </p>
       <div className="row">
         <button
@@ -56,6 +77,9 @@ function Disconnected() {
         >
           {isPending ? "Waiting for wallet" : "Connect wallet"}
         </button>
+        <a className="btn btn-quiet" href={FAUCET_URL} target="_blank" rel="noopener noreferrer">
+          Get testnet tOKRW
+        </a>
       </div>
       {!hasWallet ? <p className="note">No browser wallet detected. Install MetaMask or a compatible wallet.</p> : null}
       {error ? <p className="note note-blocked">{error.message}</p> : null}
@@ -109,6 +133,15 @@ function Connected({ address }: { address: `0x${string}` }) {
   const [cached, setCached] = useState<`0x${string}`[]>(() => loadGates(address));
   const [dismissed, setDismissed] = useState<string[]>(() => loadDismissed(address));
   const [selected, setSelected] = useState<`0x${string}` | null>(null);
+  const [view, setView] = useState<"home" | "docs">("home");
+  const goHome = useCallback(() => {
+    setSelected(null);
+    setView("home");
+  }, []);
+  const goDocs = useCallback(() => {
+    setSelected(null);
+    setView("docs");
+  }, []);
 
   // Best-effort on-chain recovery. Additive: never blocks deploy, paste, or cached gates.
   const recovery = useQuery({
@@ -155,7 +188,9 @@ function Connected({ address }: { address: `0x${string}` }) {
 
   let body;
   if (selected) {
-    body = <GateStatus proxy={selected} account={address} onBack={() => setSelected(null)} onRemove={onRemove} />;
+    body = <GateStatus proxy={selected} account={address} onHome={goHome} onRemove={onRemove} />;
+  } else if (view === "docs") {
+    body = <Docs onHome={goHome} />;
   } else {
     body = (
       <>
@@ -176,6 +211,7 @@ function Connected({ address }: { address: `0x${string}` }) {
 
   return (
     <>
+      <Header nav={{ onHome: goHome, onDocs: goDocs }} />
       <AccountStrip address={address} balance={balance} />
       <main className="main">{body}</main>
     </>
@@ -201,9 +237,12 @@ export default function App() {
     );
   } else if (chainId !== MAROO_CHAIN_ID) {
     content = (
-      <main className="main">
-        <WrongNetwork chainId={chainId} />
-      </main>
+      <>
+        <Header />
+        <main className="main">
+          <WrongNetwork chainId={chainId} />
+        </main>
+      </>
     );
   } else {
     // keyed so switching accounts remounts and reloads that account's saved gate
@@ -211,8 +250,8 @@ export default function App() {
   }
   return (
     <div className="shell">
-      <Header />
       {content}
+      <Footer />
     </div>
   );
 }

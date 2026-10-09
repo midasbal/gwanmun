@@ -56,11 +56,11 @@ forwards `msg.value` to `to`. Addresses are also in `.probe-state.json` (gitigno
 
 - Struct: `DenylistPolicy { address[] addresses; }`. Policy blob is `abi.encode` of that struct;
   `templateId` is `"DENYLIST_POLICY"`, `selector` is `"0x"`.
-- It is sender/principal based, not touched-address based:
-  - A call whose target (`forward(0x...dEaD)`) was on the list was NOT blocked.
+- It checks the sender, and any address that receives value in the call. It does not check an address that is only the call target at zero value. (Superseded 2026-10-09; see 'Denylist semantics (verified 2026-10-09)' below.) Original observations:
+  - A zero-value call whose target (`forward(0x...dEaD)`) was on the list was NOT blocked. Sending value to a listed address is blocked (see below).
   - A call FROM a denylisted sender WAS blocked.
-- A real call from a denylisted sender reverts with `InDenylist(address sender)`,
-  selector `0x0201b218`, with the sender as the argument.
+- A real call from a denylisted sender reverts with `InDenylist(address)`,
+  selector `0x0201b218`, naming the denylisted address (here the sender; it can also be a value recipient).
 - `eth_call` reproduces this revert, so simulation works as a zero-gas pre-check.
 - A passing real call emits `IPcl.PolicyCheckPassed(sender, contractAddress)` from the precompile.
 
@@ -112,3 +112,20 @@ account and SMS verification, unavailable to a non-Korean audience. Excluded fro
 - Supply an explicit `gas` on sends that may revert; gas estimation fails on a revert and the
   transaction would otherwise never be broadcast.
 - VOLUME_POLICY simulation does not predict real behavior; DENYLIST simulation does.
+
+## Denylist semantics (verified 2026-10-09)
+
+Probed read-only with eth_call against gate 0xf0e943903460a16d0ecc37d0fdb593dd36a4d862 (denylist contains 0x...dEaD), funding the `from` account via state override. Script: scripts/denylist-semantics.mjs.
+
+| Case | From    | To      | Value   | Outcome          |
+|------|---------|---------|---------|------------------|
+| 1    | USER    | DENY    | 0       | allowed          |
+| 2    | USER    | DENY    | 1 tOKRW | InDenylist(DENY) |
+| 3    | USER    | NEUTRAL | 1 tOKRW | allowed          |
+| 4    | USER    | NEUTRAL | 0       | allowed          |
+| 5    | DENY    | NEUTRAL | 0       | InDenylist(DENY) |
+| 6    | DENY    | NEUTRAL | 1 tOKRW | InDenylist(DENY) |
+| 7    | NEUTRAL | DENY    | 1 tOKRW | InDenylist(DENY) |
+| 8    | NEUTRAL | NEUTRAL | 1 tOKRW | allowed          |
+
+Rule: a transaction through the gate is rejected if the sender is on the denylist (any value, cases 5 and 6), or if it sends value to a denylisted address (cases 2 and 7). A zero-value call that only targets a denylisted address is allowed (case 1). InDenylist(address) names the denylisted party, which may be the sender or the recipient; the ABI parameter name "sender" is misleading. This supersedes the earlier sender-only description in this file.

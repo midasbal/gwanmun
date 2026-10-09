@@ -6,7 +6,7 @@ export const MAROO_CHAIN_ID_HEX = "0x6E0FF" as const;
 export const marooTestnet = defineChain({
   id: MAROO_CHAIN_ID,
   name: "Maroo Testnet",
-  nativeCurrency: { name: "tOKRW", symbol: "tOKRW", decimals: 18 },
+  nativeCurrency: { name: "Testnet OKRW", symbol: "tOKRW", decimals: 18 },
   rpcUrls: {
     default: {
       http: ["https://rpc-testnet.maroo.io"],

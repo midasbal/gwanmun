@@ -34,7 +34,7 @@ export function ShareProof({ proxy }: { proxy: `0x${string}` }) {
     ? [
         "Enforced on Maroo Testnet",
         `Gate ${shortAddr(proxy)} blocks ${shortAddr(first)}${more > 0 ? ` and ${more} more` : ""}.`,
-        "The chain rejects calls from a blocked address through this gate with InDenylist.",
+        "Maroo rejects any transaction through this gate sent by a blocked address, or sending value to one, with InDenylist.",
         `Gate: ${proxy}`,
         `Blocked: ${first}`,
         `Verify on-chain: ${verifyUrl}`,
@@ -42,7 +42,7 @@ export function ShareProof({ proxy }: { proxy: `0x${string}` }) {
     : "";
 
   const tweet = first
-    ? `I set a compliance rule on Maroo (${MAROO_HANDLE}): address ${shortAddr(first)} is blocked, and the chain itself rejects its calls through my gate. Verify on-chain.`
+    ? `I set a compliance rule on Maroo (${MAROO_HANDLE}): ${shortAddr(first)} is blocked on my gate, and the chain itself rejects any transfer sent by it or to it with InDenylist. Verify on-chain.`
     : "";
   const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}&url=${encodeURIComponent(GWANMUN_URL)}`;
 
@@ -68,7 +68,7 @@ export function ShareProof({ proxy }: { proxy: `0x${string}` }) {
             <p className="proof-statement">
               This gate <span className="mono">{shortAddr(proxy)}</span> blocks{" "}
               <span className="mono">{shortAddr(first)}</span>
-              {more > 0 ? ` and ${more} more` : ""}. The chain rejects calls from a blocked address through this gate with{" "}
+              {more > 0 ? ` and ${more} more` : ""}. Maroo rejects any transaction through this gate that is sent by a blocked address, or that sends value to one, reverting with{" "}
               <span className="mono">InDenylist</span>.
             </p>
             <dl className="proof-facts">
