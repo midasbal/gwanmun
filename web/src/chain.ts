@@ -52,3 +52,7 @@ export const PROXY_KIND_NAMES: Record<number, string> = {
 
 export const explorerTx = (hash: string) => `${marooTestnet.blockExplorers.default.url}/tx/${hash}`;
 export const explorerAddress = (addr: string) => `${marooTestnet.blockExplorers.default.url}/address/${addr}`;
+
+/** PLACEHOLDER: replace with the deployed site URL. Used for share links. */
+export const GWANMUN_URL = "https://github.com/midasbal/gwanmun";
+export const MAROO_HANDLE = "@maroo_io";

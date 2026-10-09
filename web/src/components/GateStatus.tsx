@@ -5,6 +5,7 @@ import { CopyButton } from "./CopyButton";
 import { Denylist } from "./Denylist";
 import { AddressChecker } from "./AddressChecker";
 import { OnChainDetails } from "./OnChainDetails";
+import { ShareProof } from "./ShareProof";
 
 export function GateStatus({
   proxy,
@@ -80,6 +81,7 @@ export function GateStatus({
       {data && registered ? <Denylist proxy={proxy} account={account} isAdmin={isAdmin} /> : null}
       {data && registered ? <AddressChecker proxy={proxy} account={account} /> : null}
       {data && registered ? <OnChainDetails proxy={proxy} /> : null}
+      {data && registered ? <ShareProof proxy={proxy} /> : null}
 
       <div className="row">
         <button type="button" className="btn btn-quiet btn-sm" onClick={onBack}>
