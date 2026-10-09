@@ -5,6 +5,7 @@ import { usePublicClient, useReadContract } from "wagmi";
 import { MAROO_CHAIN_ID, PCL_ADDRESS } from "../chain";
 import { iPclAbi } from "../abi/iPcl";
 import { describeError, inspectRevert } from "../lib/errors";
+import { CopyButton } from "./CopyButton";
 
 const SAMPLE_ADDRESS = "0x000000000000000000000000000000000000dEaD";
 const RECIPIENT = "0x000000000000000000000000000000000000dEaD" as const;
@@ -20,7 +21,7 @@ const forwardAbi = [
 
 type Verdict =
   | { kind: "allowed" }
-  | { kind: "blocked" }
+  | { kind: "blocked"; raw: string; sender: string }
   | { kind: "indeterminate"; message: string };
 
 function useDebounced<T>(value: T, ms: number) {
@@ -63,7 +64,7 @@ export function AddressChecker({ proxy, account }: { proxy: `0x${string}`; accou
         return { kind: "allowed" };
       } catch (e) {
         const r = inspectRevert(e);
-        if (r.pcl?.name === "InDenylist") return { kind: "blocked" };
+        if (r.pcl?.name === "InDenylist") return { kind: "blocked", raw: r.raw ?? "", sender: String(r.pcl.args[0] ?? debounced) };
         // A revert for any other reason is reported as such, never as allowed or blocked.
         if (r.isRevert) return { kind: "indeterminate", message: describeError(e).message };
         throw e; // network or RPC failure: surfaced as the error state
@@ -119,6 +120,27 @@ export function AddressChecker({ proxy, account }: { proxy: `0x${string}`; accou
             </span>
             {check.isFetching ? <span className="note">Updating</span> : null}
           </p>
+        ) : null}
+        {valid && !typing && verdict?.kind === "blocked" && !check.isError ? (
+          <details className="disclosure">
+            <summary>Show raw result</summary>
+            <dl className="raw">
+              <div>
+                <dt>Call</dt>
+                <dd className="mono wrap">eth_call from {debounced} to {proxy}, forward({RECIPIENT}), value 0</dd>
+              </div>
+              <div>
+                <dt>Revert data</dt>
+                <dd className="mono wrap bytes">
+                  {verdict.raw} <CopyButton text={verdict.raw} />
+                </dd>
+              </div>
+              <div>
+                <dt>Decoded</dt>
+                <dd className="mono wrap">InDenylist({verdict.sender})</dd>
+              </div>
+            </dl>
+          </details>
         ) : null}
       </div>
     </div>

@@ -26,7 +26,7 @@ export function describeError(err: unknown): DescribedError {
   return { rejected: false, message: e?.shortMessage ?? e?.message?.split("\n")[0] ?? "Unknown error" };
 }
 
-export type Revert = { isRevert: boolean; pcl?: { name: string; args: readonly unknown[] } };
+export type Revert = { isRevert: boolean; raw?: string; pcl?: { name: string; args: readonly unknown[] } };
 
 /** Finds revert data in a viem error and decodes it against the PCL ABI when possible. */
 export function inspectRevert(err: unknown): Revert {
@@ -40,8 +40,8 @@ export function inspectRevert(err: unknown): Revert {
   if (!raw) return { isRevert };
   try {
     const d = decodeErrorResult({ abi: iPclAbi, data: raw as Hex });
-    return { isRevert: true, pcl: { name: d.errorName, args: d.args ?? [] } };
+    return { isRevert: true, raw, pcl: { name: d.errorName, args: d.args ?? [] } };
   } catch {
-    return { isRevert: true };
+    return { isRevert: true, raw };
   }
 }
