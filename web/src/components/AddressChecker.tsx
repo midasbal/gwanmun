@@ -7,6 +7,7 @@ import { iPclAbi } from "../abi/iPcl";
 import { forwardAbi } from "../abi/forward";
 import { describeError, inspectRevert } from "../lib/errors";
 import { CopyButton } from "./CopyButton";
+import { GatePass } from "./GatePass";
 
 const SAMPLE_ADDRESS = "0x000000000000000000000000000000000000dEaD";
 const RECIPIENT = "0x00000000000000000000000000000000000000e1" as const;
@@ -67,6 +68,14 @@ export function AddressChecker({ proxy, account }: { proxy: `0x${string}`; accou
   const typing = input !== debounced;
   const showInvalid = !typing && debounced.length > 0 && !valid;
   const verdict = check.data;
+  const gpState =
+    verdict?.kind === "allowed" && !typing
+      ? "pass"
+      : verdict?.kind === "blocked" && !typing
+        ? "block"
+        : valid && !typing && check.isFetching && !verdict
+          ? "pending"
+          : "idle";
   const short = valid ? `${debounced.slice(0, 6)}...${debounced.slice(-4)}` : "";
 
   return (
@@ -113,6 +122,7 @@ export function AddressChecker({ proxy, account }: { proxy: `0x${string}`; accou
             {check.isFetching ? <span className="note">Updating</span> : null}
           </p>
         ) : null}
+        {gpState !== "idle" ? <GatePass state={gpState} /> : null}
         {valid && !typing && verdict?.kind === "blocked" && !check.isError ? (
           <details className="disclosure">
             <summary>Show raw result</summary>

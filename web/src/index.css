@@ -972,3 +972,31 @@ html { scroll-behavior: smooth; }
 .gates-addr { font-size: var(--text-sm); }
 .gates-actions { display: flex; gap: 12px; justify-content: flex-end; align-items: center; white-space: nowrap; }
 .gates-table .tag { margin-left: 0; }
+
+.gate-pass { width: 100%; max-width: 320px; margin: 4px 0 2px; }
+.gate-pass svg { width: 100%; height: 40px; display: block; overflow: visible; }
+.gp-track { stroke: var(--border); stroke-width: 2; stroke-dasharray: 2 7; stroke-linecap: round; }
+.gp-gate { stroke: var(--text-muted); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.3s ease; }
+.gp-node { fill: var(--primary); transform-box: view-box; transform-origin: 0 0; }
+
+.gate-pass[data-state="pending"] .gp-node { animation: gp-approach 1.1s ease-in-out infinite alternate; }
+.gate-pass[data-state="pass"] .gp-node { animation: gp-pass 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.gate-pass[data-state="pass"] .gp-gate { stroke: var(--primary); }
+.gate-pass[data-state="block"] .gp-node { animation: gp-block 0.85s cubic-bezier(0.3, 0.7, 0.4, 1) forwards; }
+.gate-pass[data-state="block"] .gp-gate { stroke: var(--deny); }
+
+@keyframes gp-approach { from { transform: translateX(0); } to { transform: translateX(78px); } }
+@keyframes gp-pass { 0% { transform: translateX(0); } 100% { transform: translateX(204px); } }
+@keyframes gp-block {
+  0% { transform: translateX(0); fill: var(--primary); }
+  60% { transform: translateX(86px); fill: var(--primary); }
+  73% { transform: translateX(78px); fill: var(--deny); }
+  100% { transform: translateX(82px); fill: var(--deny); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-node { animation: none !important; }
+  .gate-pass[data-state="pending"] .gp-node { transform: translateX(78px); }
+  .gate-pass[data-state="pass"] .gp-node { transform: translateX(204px); fill: var(--primary); }
+  .gate-pass[data-state="block"] .gp-node { transform: translateX(82px); fill: var(--deny); }
+}

@@ -4,7 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useBalance, usePublicClient, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { FAUCET_URL, MAROO_CHAIN_ID, explorerTx } from "../chain";
 import { forwardAbi } from "../abi/forward";
-import { describeError } from "../lib/errors";
+import { describeError, inspectRevert } from "../lib/errors";
+import { GatePass } from "./GatePass";
 
 /**
  * Explicit gas so the transaction is always broadcast. Gas estimation fails on a call the
@@ -41,6 +42,8 @@ export function SendThroughGate({ proxy, account }: { proxy: `0x${string}`; acco
   const success = receipt.data?.status === "success";
   const reverted = receipt.data?.status === "reverted";
   const busy = awaiting || pending;
+  const sendRevert = write.error ? inspectRevert(write.error) : null;
+  const gpState = success ? "pass" : reverted || sendRevert?.pcl?.name === "InDenylist" ? "block" : busy ? "pending" : "idle";
 
   function send() {
     if (!isAddress(recipient) || value === null || value <= 0n) return;
@@ -127,6 +130,8 @@ export function SendThroughGate({ proxy, account }: { proxy: `0x${string}`; acco
           {amount && !amountOk ? <p className="note">Enter an amount greater than 0, in tOKRW.</p> : null}
         </>
       )}
+
+      {gpState !== "idle" ? <GatePass key={write.data ?? "pending"} state={gpState} /> : null}
 
       {write.data ? (
         <p className="note">
