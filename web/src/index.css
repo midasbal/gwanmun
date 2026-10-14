@@ -776,20 +776,6 @@ a.btn {
 /* stage 2 layout */
 .gate-panel { max-width: none; }
 
-.home-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-  align-items: start;
-}
-.home-grid > .panel,
-.home-grid > * { max-width: none; }
-/* the paste-an-existing-gate panel loses its top rule when it becomes a grid cell */
-.home-grid > .panel-secondary { padding-top: 0; border-top: 0; }
-@media (max-width: 860px) {
-  .home-grid { grid-template-columns: 1fr; }
-}
-
 .gate-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -810,8 +796,6 @@ a.btn {
   padding: 24px;
 }
 
-.home-col { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
-.home-col > .panel { max-width: none; }
 .home-fund > .panel { max-width: none; }
 
 .docs-layout {
@@ -849,19 +833,6 @@ html { scroll-behavior: smooth; }
   .docs-layout { grid-template-columns: 1fr; gap: 24px; }
   .docs-toc { position: static; }
 }
-
-/* home cards: every home section shares one border, radius and padding */
-.home-col > .panel,
-.home-col > .panel-secondary {
-  max-width: none;
-  margin: 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 24px;
-}
-/* the gates list draws its own outer box; drop it so it is not a card inside a card, keep the row dividers */
-.home-col .list { border: 0; border-radius: 0; }
 
 .home-gates > .panel,
 .home-actions > .panel,
