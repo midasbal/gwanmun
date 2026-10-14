@@ -6,7 +6,6 @@ import { Denylist } from "./Denylist";
 import { AddressChecker } from "./AddressChecker";
 import { SendThroughGate } from "./SendThroughGate";
 import { OnChainDetails } from "./OnChainDetails";
-import { ShareProof } from "./ShareProof";
 
 export function GateStatus({
   proxy,
@@ -83,8 +82,6 @@ export function GateStatus({
         {data && registered ? <AddressChecker proxy={proxy} account={account} /> : null}
         {data && registered ? <OnChainDetails proxy={proxy} /> : null}
       </div>
-
-      {data && registered ? <ShareProof proxy={proxy} /> : null}
 
       <div className="remove-block">
         <button type="button" className="link" onClick={onRemove}>
