@@ -25,6 +25,20 @@ function Mark() {
   );
 }
 
+function HeroGate() {
+  return (
+    <div className="hero-gate" aria-hidden="true">
+      <svg viewBox="0 0 360 120" preserveAspectRatio="xMidYMid meet">
+        <line className="hg-track" x1="30" y1="72" x2="330" y2="72" />
+        <path className="hg-gate" d="M150 96 V60 a30 30 0 0 1 60 0 V96" fill="none" />
+        <circle className="hg-flank" cx="96" cy="72" r="3.5" />
+        <circle className="hg-flank" cx="264" cy="72" r="3.5" />
+        <circle className="hg-node" cx="30" cy="72" r="8" />
+      </svg>
+    </div>
+  );
+}
+
 function Header({ nav }: { nav?: { onHome: () => void; onDocs: () => void } }) {
   const { disconnect } = useDisconnect();
   const { isConnected } = useAccount();
@@ -64,15 +78,15 @@ function Disconnected() {
   const hasWallet = typeof window !== "undefined" && "ethereum" in window;
   const connector = connectors[0];
   return (
-    <section className="panel">
-      <h1>Gwanmun</h1>
-      <p className="lede">Set a compliance rule on Maroo, and prove the chain enforces it.</p>
-      <p>
-        Deploy a gate you control on the Maroo testnet, then add an address to its denylist. From that point, Maroo itself, not
-        this app, rejects that address's transactions through your gate. Connect a wallet to deploy your gate. You will need a
-        small amount of testnet tOKRW for gas, which the faucet gives out for free.
+    <div className="hero">
+      <HeroGate />
+      <h1 className="hero-title">Gwanmun</h1>
+      <p className="hero-thesis">Set a rule on Maroo. The chain enforces it.</p>
+      <p className="hero-sub">
+        Deploy a compliance gate, add an address to its denylist, and Maroo itself rejects that address's transactions.
+        Every step is verifiable on-chain.
       </p>
-      <div className="row">
+      <div className="row hero-cta">
         <button
           type="button"
           className="btn btn-primary"
@@ -94,7 +108,26 @@ function Disconnected() {
       {isPending ? <p className="note">Check your wallet to approve the connection.</p> : null}
       {!hasWallet ? <p className="note">No browser wallet detected. Install MetaMask or a compatible wallet.</p> : null}
       {error ? <p className="note note-blocked">{error.message}</p> : null}
-    </section>
+      <p className="hero-fine">Testnet only. The faucet gives free tOKRW for gas.</p>
+
+      <ol className="steps">
+        <li className="step">
+          <span className="step-n">1</span>
+          <h2>Deploy a gate</h2>
+          <p>A PCL proxy you own and control. Deploying it is a real transaction on the Maroo testnet.</p>
+        </li>
+        <li className="step">
+          <span className="step-n">2</span>
+          <h2>Set the rule</h2>
+          <p>Add addresses to the denylist. The chain blocks them on both sides of a transfer.</p>
+        </li>
+        <li className="step">
+          <span className="step-n">3</span>
+          <h2>Prove it</h2>
+          <p>Check any address gaslessly, or send a transaction and read the InDenylist revert.</p>
+        </li>
+      </ol>
+    </div>
   );
 }
 
