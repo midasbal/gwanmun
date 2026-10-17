@@ -7,6 +7,17 @@
     <title>Gwanmun</title>
     <meta name="description" content="Deploy a PCL proxy on Maroo, manage its denylist, and watch the chain enforce it." />
     <meta name="color-scheme" content="light dark" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("gwanmun.theme");
+          if (t !== "light" && t !== "dark") {
+            t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          }
+          document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

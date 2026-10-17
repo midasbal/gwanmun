@@ -13,6 +13,7 @@ import { GatesList } from "./components/GatesList";
 import { Docs } from "./components/Docs";
 import { Footer } from "./components/Footer";
 import { GateField } from "./components/GateField";
+import { ThemeToggle } from "./components/ThemeToggle";
 
 function Mark() {
   return (
@@ -58,6 +59,7 @@ function Header({ nav }: { nav?: { onHome: () => void; onDocs: () => void } }) {
         <div className="wordmark">{brand}</div>
       )}
       <div className="header-actions">
+        <ThemeToggle />
         {nav ? (
           <button type="button" className="link header-link" onClick={nav.onDocs}>
             Docs
@@ -79,6 +81,9 @@ function Disconnected() {
   const connector = connectors[0];
   return (
     <div className="hero">
+      <div className="theme-float">
+        <ThemeToggle />
+      </div>
       <HeroGate />
       <h1 className="hero-title">Gwanmun</h1>
       <p className="hero-thesis">Set a rule on Maroo. The chain enforces it.</p>
